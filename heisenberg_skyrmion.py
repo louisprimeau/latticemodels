@@ -2,20 +2,10 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-def get_random_normal_field(N, space_dim=2, spin_dim=3):
-    arr = torch.empty([spin_dim] + [N]*space_dim).normal_(mean=0, std=1)
-    return arr / torch.norm(arr, dim=0)
+from lattice_utils import *
 
-def nearest_neighbor2Dperiodic(coordinate, dims):
-    top = coordinate[0], (coordinate[1] + 1) % dims[1]
-    bot = coordinate[0], (coordinate[1] - 1) % dims[1]
-    rig = (coordinate[0] + 1) % dims[0], coordinate[1]
-    lef = (coordinate[0] - 1) % dims[0], coordinate[1]
-    return top, rig, bot, lef
 
-def get_random_idx(field):
-    dims = field.size()[1:]
-    return [torch.randint(low=0, high=dim, size=(1,)) for dim in dims]
+torch.set_default_tensor_type(torch.FloatTensor)
 
 def H(s, st, sr, sb, sl, params):
     J, Dx, Dy, h = params
@@ -27,7 +17,7 @@ def H(s, st, sr, sb, sl, params):
 def partition_function(E, T, kb):
     return torch.exp(-E / (kb * T))
 
-N = 100
+N = 1000
 space_dim = 2
 spin_dim = 3
 kb = 1
@@ -38,14 +28,17 @@ Dx, Dy = J * torch.Tensor([1, 0, 0]), J * torch.Tensor([0, 1, 0]),
 h = B * torch.Tensor([0, 0, 1])
 params = J, Dx, Dy, h
 
-field = get_random_normal_field(N, space_dim, spin_dim)
+field = get_paramagnetic_field(N, space_dim, spin_dim)
 
-temperatures = torch.linspace(10, 0.1, 30)
+temperatures = torch.linspace(3, 0.01, 200)
 annealing_steps = 10000
 
-for T in temperatures:
-    print("At temperature T={:.2f}".format(T.item()))
+Q = topological_charge(field)
+print("Q = {:.2f}".format(Q.item()))
 
+for i, T in enumerate(temperatures):
+    print("At temperature T={:.2f} ({} / {})".format(T.item(), i, len(temperatures)))
+    n_accepted = 0
     for iteration in range(annealing_steps):
           
         idx = get_random_idx(field)
@@ -62,17 +55,27 @@ for T in temperatures:
 
         if new_energy < current_energy:
             field[:, idx[0], idx[1]] = new_spin.view(-1, 1)
+            n_accepted += 1
         else:
             update_prob = partition_function(new_energy - current_energy, T, kb)
             if torch.bernoulli(update_prob):
                 field[:, idx[0], idx[1]] = new_spin.view(-1, 1)
-
+                n_accepted += 1
         if (iteration+1) % 1000 == 0:
           print("\t Completed {}/{} annealing steps".format(iteration+1, annealing_steps))
 
+    print("{}/{} steps accepted".format(n_accepted, annealing_steps))
 
+    #S = torch.mean(field, dim=(1,2))
+    #print("Average S: ({}, {}, {})".format(S[0].item(), S[1].item(), S[2].item()))
+
+    Q = topological_charge(field)
+    print("Q = {:.2f}".format(Q.item()))
+    print("------------------------------")
 field = field.numpy()
 
+
+"""
 fig = plt.figure()
 ax = fig.add_subplot()
 
@@ -89,3 +92,4 @@ field2d = field2d / np.linalg.norm(field2d, axis=0)
 ax.quiver(x, y, field2d[0], field2d[1])
 
 plt.show()
+"""
