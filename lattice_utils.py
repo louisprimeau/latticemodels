@@ -31,9 +31,9 @@ def nearest_neighbor_periodic(coordinate, dims):
 
 def nearest_neighbor2Dperiodic(coordinate, dims):
     top = coordinate[0], (coordinate[1] + 1) % dims[1]
-    bot = coordinate[0], (coordinate[1] - 1) % dims[1]
-    rig = (coordinate[0] + 1) % dims[0], coordinate[1]
-    lef = (coordinate[0] - 1) % dims[0], coordinate[1]
+    bot = coordinate[0], (coordinate[1] - 1)# % dims[1]
+    rig = (coordinate[0] + 1) % dims[1], coordinate[1]
+    lef = (coordinate[0] - 1), coordinate[1]
     return top, rig, bot, lef
 
 def get_random_idx(field):
@@ -51,12 +51,8 @@ def spherical_triangle_area(s1, s2, s3):
         1 + torch.sum(s1*s2, dim=1) + torch.sum(s2*s3, dim=1) + torch.sum(s3*s1, dim=1),
     )
 
-def spherical_triangle_area2(s1, s2, s3):
-    assert len(s1.size()) == 2 and s1.size(1) == 3
-    return torch.sqrt(2*(1 + torch.sum(s1*s2, dim=1))*(1 + torch.sum(s2*s3, dim=1))*(1 + torch.sum(s3*s1, dim=1)))
-
 def local_topological_density(s1, s2, s3, s4):
-    return (spherical_triangle_area2(s1, s2, s3) + spherical_triangle_area2(s1, s3, s4)) / (4 * pi)
+    return (spherical_triangle_area(s1, s2, s3) + spherical_triangle_area(s1, s3, s4)) / (4 * pi)
 
 def topological_density(O3field):
     # assume shape is (3, N, N)
@@ -64,11 +60,10 @@ def topological_density(O3field):
                                      torch.roll(O3field, 1, 2).flatten(1).T, # right
                                      torch.roll(O3field, 1, 1).flatten(1).T, # bottom
                                      torch.roll(O3field, -1, 1).flatten(1).T, # left
-                                     ).reshape(O3field.shape(0), O3field.shape(1))
+                                     ).reshape(O3field.size(1), O3field.size(2))
 
 def topological_charge(O3field):
     return torch.sum(topological_density(O3field))
-
 
 def simple_skyrmion2d(N, n):
     x, y = torch.meshgrid(torch.linspace(-1, 1, N), torch.linspace(-1, 1, N), indexing='xy')
