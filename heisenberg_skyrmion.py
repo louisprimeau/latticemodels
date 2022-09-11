@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-from lattice_utils import *
-from montecarlo import *
+from utils.lattice_utils import *
+from evolution.microcanonical import microcanonical
+from evolution.metropolis import metropolis
 
-torch.set_default_tensor_type(torch.FloatTensor)
+torch.set_default_tensor_type(torch.DoubleTensor)
 
 def H(s, st, sr, sb, sl, params):
     J, Dx, Dy, h = params
@@ -15,8 +16,8 @@ def H(s, st, sr, sb, sl, params):
     zme = s.dot(h)
     return - nne - dme - zme    
     
-def partition_function(dE, T, kb):
-    return torch.exp(-dE / (kb * T))
+def partition_function(dE, T):
+    return torch.exp(-dE / (T))
 
 N = 48
 space_dim = 2
@@ -30,22 +31,16 @@ Dx, Dy = D * torch.Tensor([1, 0, 0]), D * torch.Tensor([0, 1, 0]),
 h = B * torch.Tensor([0, 0, 1])
 params = J, Dx, Dy, h
 
-field = get_random_normal_field(N, space_dim, spin_dim)
-#field = simple_skyrmion2d(N, 4)
+#field = get_random_normal_field(N, space_dim, spin_dim)
+field = simple_skyrmion2d(N, 1)
 temperatures = torch.linspace(3, 0.01, 50)
-annealing_steps = int(1e4)
+annealing_passes = 10
+oldfield = torch.clone(field)
 
-field = heatbath(field, H, params, partition_function, temperatures, annealing_steps)
+field = metropolis(field, H, params, partition_function, temperatures, annealing_passes)
 
-"""
-field = overrelaxation(field,
-                       H,
-                       params,
-                       lambda *args: partition_function(*args, kb),
-                       temperatures,
-                       annealing_steps)
+fig, (ax1, ax2, ax3) = plt.subplots(3)
+ax1.imshow(oldfield[2].numpy(), vmin=-1, vmax=1, cmap='jet')
+ax2.imshow(field[2].numpy(), vmin=-1, vmax=1, cmap='jet')
 
-fig, ax = plt.subplots(1)
-ax.imshow(field[2].numpy(), vmin=-1, vmax=1, cmap='jet')
 plt.show()
-"""
