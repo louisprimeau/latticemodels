@@ -2,7 +2,7 @@
 import torch
 import numpy as np
 from numpy import pi
-import vector_geometry as vg
+from . import vector_geometry as vg
 
 def get_random_idx(field):
     dims = field.size()[1:]

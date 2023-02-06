@@ -2,6 +2,9 @@ import torch
 from . import vector_geometry as vg
 from numpy import pi
 
+def boltzmann(E, T): 
+    return torch.exp(-E / T)
+
 """
 Hamiltonian: Exchange + DM + Zeeman interactions
 """

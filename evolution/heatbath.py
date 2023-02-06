@@ -2,7 +2,9 @@ import torch
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.lattice_utils import HeatbathVectorSampler, get_random_idx, nearest_neighbor2Dperiodic, min_energy_vector
+from utils.sampling import HeatbathVectorSampler, get_random_idx
+from utils.lattice_geometry import nearest_neighbor2Dperiodic
+from utils.hamiltonian import min_energy_vector
 
 def heatbath_epoch(field, T, H, params, partition_function, steps):
     sampler = HeatbathVectorSampler()
