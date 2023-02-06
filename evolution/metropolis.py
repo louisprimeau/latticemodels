@@ -3,8 +3,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.lattice_utils import *
-
-
+from utils.sampling import *
+from utils.lattice_geometry import *
 def metropolis_epoch(field, T, H, params, partition_function, min_passes):
 
     system_size = field.size(1) * field.size(2)
@@ -28,12 +28,12 @@ def metropolis_epoch(field, T, H, params, partition_function, min_passes):
         if new_energy < current_energy or torch.bernoulli(partition_function(dE, T)):
             field[:, idx[0], idx[1]] = new_spin.view(-1, 1)
             n_accepted += 1
-            correlation[n_accepted % system_size] = torch.mean(thermal_average(field0, field, T, params))
+            #correlation[n_accepted % system_size] = torch.mean(thermal_average(field0, field, T, params))
 
         if n_accepted % system_size == 0 & n_accepted > 0:
             print("\t {} steps, {} accepted. \tQ = {:.3f}".format(iteration+1, n_accepted, topological_charge(field)))
-            relaxation_time = fit_line(torch.arange(system_size), torch.log(correlation))[0]
-            print("Autocorrelation Time: {}".format(relaxation_time.item()))
+            #relaxation_time = fit_line(torch.arange(system_size), torch.log(correlation))[0]
+            #print("Autocorrelation Time: {}".format(relaxation_time.item()))
             
         iteration += 1
 
